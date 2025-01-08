@@ -64,7 +64,7 @@ if Input_file:
 
         with col3:
             P = int(st.number_input("Periodi di previsione $P$",
-                                    min_value=1, max_value=30, value=20, step=1))
+                                    min_value=10, max_value=30, value=20, step=1))
 
         if st.button(
                 'Voglio testare il modello su una serie casuale estratta dal database'):
@@ -94,7 +94,7 @@ if Input_file:
             if scelta == 'Passato':
                 equilibrium_value = fitted_ses.fittedvalues[-1]
             else:
-                equilibrium_value = np.mean(forecast_holt)
+                equilibrium_value = np.mean(forecast_holt[:10])
             # step 3:  Modificare le previsioni per farle convergere all'equilibrio
 
             forecast_converged = []
@@ -119,7 +119,8 @@ if Input_file:
             plt.axhline(y=equilibrium_value, color='gray',
                         linestyle='--', label="Valore di equilibrio")
             plt.legend()
-            plt.title("Forecast con convergenza all'equilibrio")
+            plt.title(
+                "Forecast con convergenza all'equilibrio serie " + k, fontsize=8)
             st.pyplot(plt)
 
         if st.button("Procedi con l'aggiornamento delle previsioni"):
