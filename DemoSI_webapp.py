@@ -179,6 +179,6 @@ if Input_file:
             st.write('Ecco un estratto del database aggiornato con le previsioni')
             st.write(db_fecondità.head(100))
             dbf_csv = db_fecondità.to_csv(
-                sep="|", index=False")
+                sep="|", index=False)
             st.download_button('Scarica il file in formato CSV',
                                data=dbf_csv, file_name='ISTAT_fecondità_forecast.csv')
