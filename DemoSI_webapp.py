@@ -49,32 +49,23 @@ if Input_file:
         test_file = 0
         # %%
     if test_file == 1:
-        model_choice = st.selectbox(
-            "Scegli un modello di previsione:",
-            ["ARIMA(1,1,0)", "Smoothing"])
-
-        if model_choice == "Smoothing":
-
-            st.write("Specifica i parametri del modello di smoothing")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                alpha = st.number_input("Coefficiente di smorzamento $\\alpha$",
-                                        min_value=0.0, max_value=1.0, value=0.3, step=0.01)
-                # scelta dell'equilibrio
-                scelta = st.selectbox(
-                    "Scegli un modello di equilibrio:",
-                    ["Passato", "Futuro"])
-            with col2:
-                r = st.number_input("Coefficiente di convergenza all'equilibrio $r$",
+        st.write("Specifica i parametri del modello di smoothing")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            alpha = st.number_input("Coefficiente di smorzamento $\\alpha$",
                                     min_value=0.0, max_value=1.0, value=0.3, step=0.01)
+            # scelta dell'equilibrio
+            scelta = st.selectbox(
+                "Scegli un modello di equilibrio:",
+                ["Passato", "Futuro"])
+        with col2:
+            r = st.number_input("Coefficiente di convergenza all'equilibrio $r$",
+                                min_value=0.0, max_value=1.0, value=0.3, step=0.01)
 
-            with col3:
-                P = int(st.number_input("Periodi di previsione $P$",
-                                        min_value=1, max_value=30, value=20, step=1))
-        else:
-            st.write('Modello selezionato: ARIMA(1,1,0)')
+        with col3:
             P = int(st.number_input("Periodi di previsione $P$",
                                     min_value=1, max_value=30, value=20, step=1))
+
         if st.button(
                 'Voglio testare il modello su una serie casuale estratta dal database'):
 
@@ -82,68 +73,54 @@ if Input_file:
             Y = db_group.get_group(k)
             x = np.array(Y['Value'])
 
-            if model_choice == "Smoothing":
-                # step 1: Applicare lo smoothing esponenziale per calcolare il valore di equilibrio
-                if np.var(x) > 0:
-                    model_ses = sm.tsa.SimpleExpSmoothing(x)
-                    fitted_ses = model_ses.fit(
-                        smoothing_level=alpha, optimized=False)
-                else:
-                    fitted_ses = [np.mean(x)] * len(x)
-                    equilibrium_value = np.mean(x)
-
-                # step 2: Modello di Holt con trend lineare per generare previsioni
-                if np.var(x) > 0:
-                    model_holt = sm.tsa.ExponentialSmoothing(
-                        x, trend="add", seasonal=None)
-                    fitted_holt = model_holt.fit()
-                    forecast_holt = fitted_holt.forecast(steps=P)
-                else:
-                    forecast_holt = [np.mean(x)] * P
-
-                if scelta == 'Passato':
-                    equilibrium_value = fitted_ses.fittedvalues[-1]
-                else:
-                    equilibrium_value = np.mean(forecast_holt)
-                # step 3:  Modificare le previsioni per farle convergere all'equilibrio
-
-                forecast_converged = []
-                for i, val in enumerate(forecast_holt):
-                    weight = np.exp(-r * i)  # Peso esponenziale
-                    adjusted_val = weight * val + \
-                        (1 - weight) * equilibrium_value
-                    forecast_converged.append(adjusted_val)
-                # la serie finale con le previsioni a P anni
-
-                # step 4: risultato e completamento del dataframe
-                xf = forecast_converged  # la serie predetta
-                xf = [max(0, val) for val in xf]
-
-                plt.plot(x, label="Serie originale", marker='o')
-                plt.plot(fitted_ses.fittedvalues,
-                         label="Smoothing Esponenziale", linestyle='--')
-                plt.plot(range(len(x), len(x) + len(forecast_holt)),
-                         forecast_holt, label="Forecast Holt", linestyle='--')
-                plt.plot(range(len(x), len(x) + len(forecast_converged)),
-                         xf, label="Convergenza all'equilibrio", linestyle=':')
-                plt.axhline(y=equilibrium_value, color='gray',
-                            linestyle='--', label="Valore di equilibrio")
-                plt.legend()
-                plt.title("Forecast con convergenza all'equilibrio")
-                st.pyplot(plt)
+            # step 1: Applicare lo smoothing esponenziale per calcolare il valore di equilibrio
+            if np.var(x) > 0:
+                model_ses = sm.tsa.SimpleExpSmoothing(x)
+                fitted_ses = model_ses.fit(
+                    smoothing_level=alpha, optimized=False)
             else:
+                fitted_ses = [np.mean(x)] * len(x)
+                equilibrium_value = np.mean(x)
 
-                model = sm.tsa.ARIMA(x, order=(1, 1, 0))
-                result = model.fit()
-                xf = result.forecast(P)
-                xf = [max(0, val) for val in xf]
+            # step 2: Modello di Holt con trend lineare per generare previsioni
+            if np.var(x) > 0:
+                model_holt = sm.tsa.ExponentialSmoothing(
+                    x, trend="add", seasonal=None)
+                fitted_holt = model_holt.fit()
+                forecast_holt = fitted_holt.forecast(steps=P)
+            else:
+                forecast_holt = [np.mean(x)] * P
 
-                plt.plot(x, label="Serie originale", marker='o')
-                plt.plot(range(len(x), len(x) + P),
-                         xf, label="Previsione", linestyle=':')
-                plt.legend()
-                plt.title("Forecast con ARIMA")
-                st.pyplot(plt)
+            if scelta == 'Passato':
+                equilibrium_value = fitted_ses.fittedvalues[-1]
+            else:
+                equilibrium_value = np.mean(forecast_holt)
+            # step 3:  Modificare le previsioni per farle convergere all'equilibrio
+
+            forecast_converged = []
+            for i, val in enumerate(forecast_holt):
+                weight = np.exp(-r * i)  # Peso esponenziale
+                adjusted_val = weight * val + \
+                    (1 - weight) * equilibrium_value
+                forecast_converged.append(adjusted_val)
+            # la serie finale con le previsioni a P anni
+
+            # step 4: risultato e completamento del dataframe
+            xf = forecast_converged  # la serie predetta
+            xf = [max(0, val) for val in xf]
+
+            plt.plot(x, label="Serie originale", marker='o')
+            plt.plot(fitted_ses.fittedvalues,
+                     label="Smoothing Esponenziale", linestyle='--')
+            plt.plot(range(len(x), len(x) + len(forecast_holt)),
+                     forecast_holt, label="Forecast Holt", linestyle='--')
+            plt.plot(range(len(x), len(x) + len(forecast_converged)),
+                     xf, label="Convergenza all'equilibrio", linestyle=':')
+            plt.axhline(y=equilibrium_value, color='gray',
+                        linestyle='--', label="Valore di equilibrio")
+            plt.legend()
+            plt.title("Forecast con convergenza all'equilibrio")
+            st.pyplot(plt)
 
         if st.button("Procedi con l'aggiornamento delle previsioni"):
             st.text('script 2')
