@@ -12,7 +12,7 @@ import streamlit as st  # servirà nel caso di sviluppo di una webapp
 # %% Funzione generale previsore
 
 
-def df_forecast(db_group, k, scelta, alpha, r, P, grafico):
+def df_forecast(db_group, k, N, alpha, r, P, grafico):
     Y = db_group.get_group(k)
     x = np.array(Y['Value'])
 
@@ -24,7 +24,6 @@ def df_forecast(db_group, k, scelta, alpha, r, P, grafico):
         fitted_ses = fitted_ses.fittedvalues
     else:
         fitted_ses = [np.mean(x)] * len(x)
-        equilibrium_value = np.mean(x)
 
     # step 2: Modello di Holt con trend lineare per generare previsioni
     if np.var(x) > 0:
@@ -35,10 +34,7 @@ def df_forecast(db_group, k, scelta, alpha, r, P, grafico):
     else:
         forecast_holt = [np.mean(x)] * P
 
-    if scelta == 'Passato':
-        equilibrium_value = fitted_ses[-1]
-    else:
-        equilibrium_value = np.mean(forecast_holt[:10])
+    equilibrium_value = np.mean(forecast_holt[:N])
     # step 3:  Modificare le previsioni per farle convergere all'equilibrio
 
     forecast_converged = []
@@ -136,10 +132,7 @@ if scelta == "Matrice di fecondità":
             with col1:
                 alpha = st.number_input("Coefficiente di smorzamento $\\alpha$",
                                         min_value=0.0, max_value=1.0, value=0.3, step=0.01)
-                # scelta dell'equilibrio
-                scelta = st.selectbox(
-                    "Scegli un modello di equilibrio:",
-                    ["Passato", "Futuro"])
+
             with col2:
                 r = st.number_input("Coefficiente di convergenza all'equilibrio $r$",
                                     min_value=0.0, max_value=1.0, value=0.3, step=0.01)
@@ -147,20 +140,23 @@ if scelta == "Matrice di fecondità":
             with col3:
                 P = int(st.number_input("Periodi di previsione $P$",
                                         min_value=10, max_value=30, value=20, step=1))
-
+            with col1:
+                # scelta dell'equilibrio
+                N = int(st.number_input("Orizzonte per il calolo dell'equilibrio $\\N$",
+                                        min_value=10, max_value=P, value=10, step=1))
             if st.button(
                     'Voglio testare il modello su una serie casuale estratta dal database'):
                 grafico = "Sì"
                 k = random.choice(gp_code)
-                df_forecast(db_group, k, scelta, alpha, r, P, grafico)
+                df_forecast(db_group, k, N, alpha, r, P, grafico)
 
             if st.button("Procedi con l'aggiornamento delle previsioni"):
                 grafico = "No"
                 progress_bar = st.progress(0)
                 tprogress = 0
                 nprogress = len(gp_code)
-                for k in gp_code[:20]:
-                    Yf = df_forecast(db_group, k, scelta, alpha, r, P, grafico)
+                for k in gp_code:
+                    Yf = df_forecast(db_group, k, N, alpha, r, P, grafico)
                     # step 5: accoda al dataframe originale
                     db_fecondità = pd.concat(
                         [db_fecondità, Yf], ignore_index=True)
@@ -268,9 +264,8 @@ else:
                         by=['Unicode', 'TIME'])  # ordinamento
                     db_mortalità_100 = db_mortalità_100[~db_mortalità_100['ETA1'].isin(
                         età_interesse)]  # esclude le età superiori a 100
-                    st.success("Calcolo effettuato")
+                    st.success("Calcolo effettuato: file salvati in sessione")
                     st.session_state['dataframes']['db_mortalità_100'] = db_mortalità_100
-                    st.write("File salvati in sessione")
 
             # Previsione
             if "db_mortalità_100" in st.session_state["dataframes"]:
@@ -280,10 +275,6 @@ else:
                 with col4:
                     alphaM = st.number_input("Coefficiente di smorzamento  $\\alpha_M$",
                                              min_value=0.0, max_value=1.0, value=0.3, step=0.01)
-                    # scelta dell'equilibrio
-                    scelta = st.selectbox(
-                        "Scegli un modello di equilibrio :",
-                        ["Passato", "Futuro"])
                 with col5:
                     rM = st.number_input("Coefficiente di convergenza all'equilibrio $r_M$",
                                          min_value=0.0, max_value=1.0, value=0.3, step=0.01)
@@ -291,6 +282,11 @@ else:
                 with col6:
                     PM = int(st.number_input("Periodi di previsione $P_M$",
                                              min_value=10, max_value=30, value=20, step=1))
+                with col4:
+                    # scelta dell'equilibrio
+                    NM = int(st.number_input("Orizzonte per il calolo dell'equilibrio $\\N_M$",
+                                             min_value=10, max_value=PM, value=10, step=1))
+
                 if st.button(
                         'Voglio testare il modello su una serie casuale estratta'):
                     db_mortalità_100 = st.session_state['dataframes']['db_mortalità_100']
@@ -300,7 +296,7 @@ else:
                     k = random.choice(gp_code)
                     grafico = "Sì"
 
-                    df_forecast(db_group, k, scelta, alphaM, rM, PM, grafico)
+                    df_forecast(db_group, k, NM, alphaM, rM, PM, grafico)
 
                 if st.button("Procedi con l'aggiornamento delle previsioni per la mortalità"):
                     grafico = "No"
@@ -311,12 +307,13 @@ else:
                     progress_bar = st.progress(0)
                     tprogress = 0
                     nprogress = len(gp_code)
-                    for k in gp_code[0:20]:
-                        Yf = df_forecast(db_group, k, scelta,
+                    db_mortalità_100_forecast = db_mortalità_100
+                    for k in gp_code:
+                        Yf = df_forecast(db_group, k, NM,
                                          alphaM, rM, PM, grafico)
                         # accoda al dataframe  originale
                         db_mortalità_100_forecast = pd.concat(
-                            [db_mortalità_100, Yf], ignore_index=True)
+                            [db_mortalità_100_forecast, Yf], ignore_index=True)
                         tprogress += 1
                         progress_bar.progress(tprogress/nprogress)
                     st.success("Elaborazione completata!")
