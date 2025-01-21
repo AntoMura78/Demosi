@@ -99,7 +99,7 @@ with st.sidebar:
 st.title("Modulo 1: Aggiornamento matrici di fecondità e mortalità")
 scelta = st.radio(
     "Scegli un'opzione:",
-    options=["Motrice di fecondità", "Tassi di mortalità"]
+    options=["Matrice di fecondità", "Tassi di mortalità"]
 )
 # %% load file
 if scelta == "Matrice di fecondità":
