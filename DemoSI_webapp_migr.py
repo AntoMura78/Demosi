@@ -102,12 +102,12 @@ st.title("Modulo 2: Aggiornamento movimento migratorio")
 # %%
 if "db_pop_classe_final" in st.session_state["dataframes"]:
     st.success(
-        "Il database sulla popolazione straniera e italiana per classe di età è disponibile, puoi quindi procedere con l'esecuzione del modulo")
+        "Il database sulla popolazione straniera e italiana per classe di età è disponibile, puoi quindi procedere con l'esecuzione del modulo previsionale")
 else:
     st.error(
         "Per eseguire questo modulo è necessario costruire il database della popolazione straniera e italiana per classe di età")
     Input_file_2 = st.file_uploader(
-        'Inizia caricando il file sulla popolazione straniera per classe di età ISTAT_Pop_str.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
+        'Inizia caricando il file sulla popolazione straniera per classe di età db_Pop_str.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
     if Input_file_2:
         try:
             db_pop_str = pd.read_csv(
@@ -176,7 +176,7 @@ else:
         st.write(db_pop_classe_str.head(5))
 
         Input_file_3 = st.file_uploader(
-            'Prosegui cricando il file sulla popolazione totale per classe di età ISTAT_Pop_tot.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
+            'Prosegui cricando il file sulla popolazione totale per classe di età db_Pop_tot.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
         if Input_file_3:
             try:
                 db_pop_tot = pd.read_csv(
@@ -263,8 +263,10 @@ if "db_pop_classe_final" in st.session_state["dataframes"]:
     )
     # %% load file
     if scelta == "Movimenti con l'estero":
+        st.success("Procederemo con il calcolo del tasso di migratorietà verso l'estero; la previsione si basa su un modello di trend\
+            con convergenza all'equilibrio; i tre scenari corrispondono agli estremi di un intervallo centrato sull'equilibrio storico")
         Input_file = st.file_uploader(
-            'Carica il file dei cancellati ISTAT_Migrazioni_2.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
+            'Carica il file dei cancellati db_cancellati.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
         if Input_file:
             try:
                 db_cancellati = pd.read_csv(
@@ -389,16 +391,16 @@ if "db_pop_classe_final" in st.session_state["dataframes"]:
                 st.success("Elaborazione completata!")
                 db_cancellati_tasso = db_cancellati_tasso.sort_values(
                     by=['Unicode', 'TIME'])  # ordinamento
-                st.session_state['dataframes']['db_cancellati_tasso_forecast'] = db_cancellati_tasso
+                st.session_state['dataframes']['db_cancellati_estero_tasso_forecast'] = db_cancellati_tasso
                 st.write(
-                    "Ecco un estratto del database previsinale per le cancellazioni verso l'estero")
+                    "Ecco un estratto del database previsionale per le cancellazioni verso l'estero")
                 st.write(db_cancellati_tasso.head(10))
         # %% Modulo per gli iscritti verso l'estero
-        if "db_cancellati_tasso_forecast" in st.session_state["dataframes"] and "db_iscritti_forecast" not in st.session_state["dataframes"]:
+        if "db_cancellati_estero_tasso_forecast" in st.session_state["dataframes"] and "db_iscritti_forecast" not in st.session_state["dataframes"]:
             st.error(
                 "Manca lo scenario per le iscrizioni dall'estero")
             Input_file_4 = st.file_uploader(
-                'Carica il file degli iscritti ISTAT_Migrazioni_1.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
+                'Carica il file degli iscritti db_iscritti.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
             if Input_file_4:
                 try:
                     db_iscritti = pd.read_csv(
@@ -474,14 +476,17 @@ if "db_pop_classe_final" in st.session_state["dataframes"]:
                     st.success("Elaborazione completata!")
                     db_iscritti = db_iscritti.sort_values(
                         by=['Unicode', 'TIME'])  # ordinamento
-                    st.session_state['dataframes']['db_iscritti_forecast'] = db_iscritti
+                    st.session_state['dataframes']['db_iscritti_estero_forecast'] = db_iscritti
                     st.write(
                         "Ecco un estratto del database previsionale per gli iscritti dall'estero")
                     st.write(db_iscritti.head(10))
     # %% movimenti interni
     elif scelta == "Movimenti interni":
+        st.success("Questo modulo definisce il tasso di migratorietà interno e ne valuta le proiezioni attraverso un modello\
+            di analisi del trend e convergenza all'equilibrio; gli scenari sono definiti come estremi dell'intervallo di variabilità\
+                centrato sull'equilibrio storico")
         Input_file_interm = st.file_uploader(
-            'Carica il file dei cancellati ISTAT_Migrazioni_2.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
+            'Carica il file dei cancellati db_cancellati.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
         if Input_file_interm:
             try:
                 db_cancellati = pd.read_csv(
@@ -620,7 +625,7 @@ if "db_pop_classe_final" in st.session_state["dataframes"]:
             st.error(
                 "Per concludere, calcoliamo la matrice di distribuzione dei trasferiemnti di residenza verso altre province")
             Input_file_mov = st.file_uploader(
-                'Carica il file dei cancellati ISTAT_Migrazioni_3.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
+                'Carica il file dei cancellati db_matriceOD.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
             if Input_file_mov:
                 db_orig_dest = pd.read_csv(
                     Input_file_mov, sep=',', encoding='utf-8')
@@ -638,7 +643,7 @@ if "db_pop_classe_final" in st.session_state["dataframes"]:
                 db_orig_dest = db_orig_dest[db_orig_dest['ITTER107_A']
                                             != db_orig_dest['ITTER107_B']]
                 db_orig_dest.reset_index(drop=True, inplace=True)
-                # %% bisogna calcolare la distribuzioen media origine_destinazione
+                # %% bisogna calcolare la distribuzione media origine_destinazione
                 group_cols = [col for col in db_orig_dest.columns if col not in [
                     'TIME', 'Value']]
                 tot_or_dest = db_orig_dest.groupby(
@@ -674,7 +679,7 @@ if "db_pop_classe_final" in st.session_state["dataframes"]:
                 st.success("Elaborazione compeltata")
                 db_tot_or_dest = db_tot_or_dest.sort_values(
                     by=['Unicode', 'ITTER107_B'])  # ordinamento
-                st.session_state['dataframes']['db_Or_dest_dist'] = db_tot_or_dest
+                st.session_state['dataframes']['db_matriceOD_forecast'] = db_tot_or_dest
                 st.write(
                     "Ecco un estratto del database origine-destinazione per i cambi di residenza")
                 st.write(db_tot_or_dest.head(10))
