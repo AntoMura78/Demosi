@@ -103,8 +103,10 @@ scelta = st.radio(
 )
 # %% load file
 if scelta == "Matrice di fecondità":
+    st.success("Dopo aver caricato il file di base di fonte Istat, procederemo a proiettare i tassi di fecondità \
+        tramite un modello di analisi del trend e convergenza all'equilibrio")
     Input_file = st.file_uploader(
-        'Carica il file ISTAT_fecondità.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
+        'Carica il file db_fecondità.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
     if Input_file:
         try:
             db_fecondità = pd.read_csv(Input_file, sep='|', encoding='utf-8')
@@ -172,8 +174,10 @@ if scelta == "Matrice di fecondità":
                 st.write("File salvati nella sessione")
 else:
     # %
+    st.success("Dovrai caricare due file di base, uno con le probabilità di morte e l'altro con i sopravviventi, entrambi di fonte Istat, \
+        il secondo servirà per stimare la probabiità di morte per la classe 100 anni e più, quindi procederemo con le proiezioni utilizzando un modello di analisi del trend e convergenza all'equilibrio")
     Input_file_2 = st.file_uploader(
-        'Carica il file ISTAT_mortalità_pm.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
+        'Carica il file db_mortalità_pm.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
     if Input_file_2:
         try:
             db_mortalità = pd.read_csv(
@@ -195,7 +199,7 @@ else:
             st.error('Formato file non supportato')
             test_file_2 = 0
         Input_file_3 = st.file_uploader(
-            'Carica il file ISTAT_mortalità_sop.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
+            'Carica il file db_mortalità_sop.csv, verifica che non vi siano cambiamenti nel nome dei campi e nel separatore')
 
         if Input_file_3:
             try:
@@ -323,5 +327,5 @@ else:
                         'Ecco un estratto del database aggiornato con le previsioni')
                     st.write(db_mortalità_100_forecast.head(PM*2))
 
-                    st.session_state['dataframes']['db_mortalità_100_forecast'] = db_mortalità_100_forecast
+                    st.session_state['dataframes']['db_mortalità_forecast'] = db_mortalità_100_forecast
                     st.write("File salvati nella sessione")
